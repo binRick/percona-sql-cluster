@@ -1,0 +1,25 @@
+{
+  "name": "percona-sql-cluster",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/binRick/percona-sql-cluster.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/binRick/percona-sql-cluster/issues"
+  },
+  "homepage": "https://github.com/binRick/percona-sql-cluster#readme",
+  "dependencies": {
+    "async": "^2.5.0",
+    "chalk": "^2.1.0",
+    "express": "^4.15.4",
+    "underscore": "^1.8.3"
+  }
+}
