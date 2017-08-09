@@ -1,0 +1,17 @@
+
+
+export PROXYSQL_USERNAME="admin"
+export PROXYSQL_PASSWORD="admin"
+export PROXYSQL_HOSTNAME="localhost"
+export PROXYSQL_PORT="6032"
+export CLUSTER_USERNAME="{{proxyClusterUser}}"
+export CLUSTER_PASSWORD="{{proxyClusterPass}}"
+export CLUSTER_HOSTNAME="{{hostvars.sqlServer1.ansible_ssh_host}}"
+export CLUSTER_PORT="3306"
+export MONITOR_USERNAME="{{proxyMonitorUser}}"
+export MONITOR_PASSWORD="{{proxyMonitorPass}}"
+export CLUSTER_APP_USERNAME="{{proxyClusterAppUser}}"
+export CLUSTER_APP_PASSWORD="{{proxyClusterAppPass}}"
+export WRITE_HOSTGROUP_ID="10"
+export READ_HOSTGROUP_ID="11"
+export MODE="singlewrite"

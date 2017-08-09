@@ -1,0 +1,162 @@
+---
+- hosts: VMs
+  gather_facts: False
+  roles: [daemontools]
+  tasks:
+    - name: change hosts
+      template: src=ansibleFiles/sql-hosts.j2 dest=/etc/hosts
+    - name: Updating Packages in sqlServers
+      yum: name=* state=latest
+    - name: deploying yum packages
+      yum: name={{item}} state=present
+      with_items: [wget,libselinux-python,gcc,gcc-c++,autoconf,net-tools,libaio,python,yum-utils,epel-release,git,strace,python-devel]
+    - name: deploying epel yum packages
+      yum: name={{item}} state=present
+      with_items: [nload,python2-pip]
+    - name: Update the /etc/ssh/sshd_config file
+      register: ssh_config
+      lineinfile:
+       dest: /etc/ssh/sshd_config
+       regexp: "^UseDNS"
+       line: "UseDNS no"
+       insertafter: EOF
+       state: present
+    - name: Restart ssh
+      when: ssh_config.changed
+      service:
+       name: sshd
+       state: restarted
+
+
+- hosts: sqlServers
+  gather_facts: False
+  tasks:
+    - name: Deploying pips
+      with_items: [PyMySQL]
+      pip: name={{item}} state=present
+    - name: Removing yum packages
+      yum: name={{item}} state=absent
+      with_items: [mariadb,mariadb-libs,mariadb-bench,mariadb-devel,mariadb-server]
+    - name: Disabling Services
+      service: name={{item}} state=stopped enabled=False
+      with_items: [iptables,httpd,xinetd,saslauthd,sendmail]
+    - name: Copying Percona Repo RPM
+      copy: src=ansibleFiles/percona-release-0.1-4.noarch.rpm dest=/usr/src/percona-release-0.1-4.noarch.rpm
+    - name: Installing Percona Repo RPMa
+      command: creates=/etc/yum.repos.d/percona-release.repo rpm -ivh /usr/src/percona-release-0.1-4.noarch.rpm
+    - name: Installing Percona-XtraDB-Cluster-57 meta package
+      yum: name={{item}} state=present
+      with_items: [Percona-XtraDB-Cluster-57]
+
+- hosts: sqlPerconaServers
+  gather_facts: False
+  tasks:
+    - name: Checking if cluster is Created
+      stat: path=/root/.clusterCreated
+      register: clusterCreated
+    - name: Deploying default my.cnf
+      when: clusterCreated.stat.exists == False
+      copy: src=ansibleFiles/percona-my.cnf-DEFAULT dest=/etc/my.cnf
+    - name: Retarting mysql service
+      when: clusterCreated.stat.exists == False
+      service: name={{item}} state=restarted enabled=False
+      with_items: [mysql]
+    - name: Pausing for mysql to start
+      when: clusterCreated.stat.exists == False
+      pause: seconds=5
+    - name: Setting MySQL Root Password
+      when: clusterCreated.stat.exists == False
+      shell:
+        creates: /root/.mps
+        cmd: "mysqladmin --password=$(grep 'temporary password' /var/log/mysqld.log| cut -d'@' -f2| cut -d' ' -f2) password '{{sqlRootPassword}}'"
+    - name: Creating /root/.mps
+      file: path=/root/.mps state=touch
+      when: clusterCreated.stat.exists == False
+    - name: Deploying .my.cnf config
+      when: clusterCreated.stat.exists == False
+      template: src=ansibleFiles/sql-client-my.cnf.j2 dest=/root/.my.cnf
+
+
+    - name: Bootstrapping sqlServer with sst User
+      when: clusterCreated.stat.exists == False
+      shell:
+        cmd: "mysql -e \"CREATE USER IF NOT EXISTS '{{sstUser}}'@'localhost' IDENTIFIED BY '{{sstPassword}}'; GRANT RELOAD, LOCK TABLES, PROCESS, REPLICATION CLIENT ON *.* TO '{{sstUser}}'@'localhost'\""
+    - name: Bootstrapping sqlServer with proxy User
+      when: clusterCreated.stat.exists == False
+      shell:
+        cmd: "mysql -e \"CREATE USER IF NOT EXISTS '{{proxyClusterUser}}'@'%' IDENTIFIED BY '{{proxyClusterPass}}'; GRANT ALL ON *.* TO '{{proxyClusterUser}}'@'%'\""
+    - name: Stopping mysql service
+      when: clusterCreated.stat.exists == False
+      service: name=mysql state=stopped enabled=False
+    - name: Deploying my.cnf to Bootstrap SQL Server
+      when: clusterCreated.stat.exists == False
+      tags: t
+      template: src=ansibleFiles/percona-my.cnf.j2 dest=/etc/my.cnf
+    - name: Bootstrapping primary member
+      when: clusterCreated.stat.exists == False
+      command: systemctl start mysql@bootstrap.service
+      delegate_to: "{{sqlBootstrapServer}}"
+      run_once: True
+    - name: Pausing for primary member to start
+      when: clusterCreated.stat.exists == False
+      pause: seconds=5
+    - name: Starting mysql on non primary members
+      when: "clusterCreated.stat.exists == False and inventory_hostname != sqlBootstrapServer"
+      service: name=mysql state=started
+    - name: Pausing for cluster to start
+      when: clusterCreated.stat.exists == False
+      pause: seconds=5
+    - name: Stopping mysqld in bootstrap mode on primary member
+      when: clusterCreated.stat.exists == False
+      command: systemctl stop mysql@bootstrap.service
+      delegate_to: "{{sqlBootstrapServer}}"
+      run_once: True
+    - name: Starting mysqld on primary member
+      when: clusterCreated.stat.exists == False
+      service: name=mysql state=started
+      delegate_to: "{{sqlBootstrapServer}}"
+      run_once: True
+    - name: Creating /root/.clusterCreated
+      when: clusterCreated.stat.exists == False
+      file: path=/root/.clusterCreated state=touch
+    - name: Enabling mysqld
+      service: name=mysql enabled=True
+
+- hosts: sqlPerconaServers
+  tasks:
+    - name: Creating Cluster App Production Database
+      shell:
+        cmd: "mysql -e \"CREATE DATABASE {{sqlDatabase}}\""
+      delegate_to: "{{sqlBootstrapServer}}"
+      ignore_errors: True
+      run_once: True
+
+
+- hosts: sqlProxies
+  tasks:
+    - name: Installing proxysql
+      yum: name=proxysql state=present
+    - name: Deploying proxysql admin config
+      template: src=ansibleFiles/proxySQL.conf.j2 dest=/etc/proxysql-admin.cnf
+    - name: Deploying proxysql config
+      template: src=ansibleFiles/proxysql.cnf.j2 dest=/etc/proxysql.cnf owner=root group=root mode=0700
+    - name: Restarting proxysql
+      service: name=proxysql state=restarted enabled=True
+    - name: Pausing for proxy to start
+      pause: seconds=10
+    - name: Syncing Users to Proxy Servers
+      shell:
+        cmd: "proxysql-admin --config-file=/etc/proxysql-admin.cnf --syncusers"
+    - name: Enabling Proxy Servers
+      shell:
+        cmd: "echo 'n' | proxysql-admin --config-file=/etc/proxysql-admin.cnf --enable"
+- hosts: sqlPerconaServers
+  tasks:
+    - name: Enabling Cluster App User
+      shell:
+        cmd: "mysql -e \"GRANT ALL ON {{sqlDatabase}}.* TO '{{proxyClusterAppUser}}'@'10.%'; FLUSH PRIVILEGES;\""
+      delegate_to: "{{sqlBootstrapServer}}"
+      ignore_errors: True
+      run_once: True
+
+

@@ -1,0 +1,5 @@
+127.0.0.1 localhost localhost.localdomain localhost4
+
+{% for host in groups['sqlServers'] %}
+{{ hostvars[host]['ansible_ssh_host'] }} {{ hostvars[host].inventory_hostname }}
+{% endfor %}

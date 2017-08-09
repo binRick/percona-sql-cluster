@@ -1,0 +1,22 @@
+[mysqld]
+!includedir /etc/my.cnf.d/
+!includedir /etc/percona-xtradb-cluster.conf.d/
+
+wsrep_provider=/usr/lib64/galera3/libgalera_smm.so
+
+wsrep_cluster_name={{sqlClusterName}}
+wsrep_cluster_address=gcomm://{{hostvars[sqlBootstrapServer].ansible_ssh_host}}{% for host in groups['sqlPerconaServers'] %}{% if loop.index > 1 %}{{hostvars[host].ansible_ssh_host}}{% endif %}{% if loop.index < groups['sqlPerconaServers']|length %}
+,{% endif %}{% endfor %}
+
+
+wsrep_node_name={{inventory_hostname}}
+wsrep_node_address={{hostvars[inventory_hostname].ansible_ssh_host}}
+
+wsrep_sst_method=xtrabackup-v2
+wsrep_sst_auth={{sstUser}}:{{sstPassword}}
+
+pxc_strict_mode=ENFORCING
+
+binlog_format=ROW
+default_storage_engine=InnoDB
+innodb_autoinc_lock_mode=2

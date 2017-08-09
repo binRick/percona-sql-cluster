@@ -1,0 +1,34 @@
+---
+- hosts: sqlServers
+  gather_facts: False
+  remote_user: rick
+  become: yes
+  vars:
+  tasks:
+    - name: Disabling mysql service
+      delegate_to: "{{hostvars[inventory_hostname].onNode}}"
+      shell: name=mysql enabled=False state=stopped
+    - pause: seconds=20
+    - name: Forcefully killing mysqld process
+      delegate_to: "{{hostvars[inventory_hostname].onNode}}"
+      shell: "vzlist {{hostvars[inventory_hostname].ctid}} && vzctl exec {{hostvars[inventory_hostname].ctid}} \"killall -9 mysqld\""
+      ignore_errors: True
+    - name: Destroying sqlServer VMs
+      ignore_errors: True
+      delegate_to: "{{hostvars[inventory_hostname].onNode}}"
+      register: destroyed
+      openvz: 
+        state: absent
+        ctid: "{{hostvars[inventory_hostname].ctid}}"
+    - name: Pausing to allow destroy to complete
+      pause: seconds=30
+    - name: Destroying sqlServer ZFSs
+      delegate_to: "{{hostvars[inventory_hostname].onNode}}"
+      zfs: 
+        state: absent
+        name: "tank/{{hostvars[inventory_hostname].ctid}}"
+    - name: Removing VM confs
+      delegate_to: "{{hostvars[inventory_hostname].onNode}}"
+      file:
+        state: absent
+        path: "/z/tank/{{hostvars[inventory_hostname].ctid}}.conf"

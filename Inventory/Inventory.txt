@@ -1,0 +1,57 @@
+[vzNodes]
+ogre			ansible_ssh_host=66.35.90.140
+impala 			ansible_ssh_host=66.35.90.138
+newhampshire		ansible_ssh_host=66.35.90.139
+
+[vzNodes:vars]
+ansible_user=rick
+
+
+[VMs]
+dev-sql1	ctid=1488100	ansible_ssh_host=10.114.88.50	onNode=ogre
+dev-sql2 	ctid=1488101	ansible_ssh_host=10.114.88.51	onNode=impala
+dev-sql3 	ctid=1488102	ansible_ssh_host=10.114.88.52	onNode=newhampshire
+dev-sqlProxy1 	ctid=1488201	ansible_ssh_host=10.114.88.80	onNode=ogre
+dev-sqlProxy2 	ctid=1488202	ansible_ssh_host=10.114.88.81	onNode=impala
+dev-sqlProxy3 	ctid=1488203	ansible_ssh_host=10.114.88.82	onNode=newhampshire
+
+
+[VMs:vars]
+ansible_ssh_user=root
+cpus=1
+ram=1G
+swap=1G
+ostemplate=centos-7-x86_64
+
+[sqlProxies]
+dev-sqlProxy1
+dev-sqlProxy2
+dev-sqlProxy3
+[sqlProxies:vars]
+proxyClusterAppUser=proxyUser
+
+[sqlServers]
+dev-sql1
+dev-sql2
+dev-sql3
+
+[sqlPerconaServers]
+dev-sql1
+dev-sql2
+dev-sql3
+[sqlPerconaServers:vars]
+sqlDatabase=rickDB
+
+[sqlPerconaServers:vars]
+sqlRootPassword=82672627365232a
+sstUser=sstUser
+sstPassword=23287362583628
+proxyClusterUser=clusterUser
+proxyClusterPass=2362736276326237
+sqlBootstrapServer=dev-sql1
+sqlClusterName=myCluster1
+
+
+[all:vars]
+hostnamePrefix=sqlCluster-
+PrivateNetwork=10.114.88.0/24
