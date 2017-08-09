@@ -28,12 +28,26 @@ dev-sqlProxy1
 dev-sqlProxy2
 dev-sqlProxy3
 [sqlProxies:vars]
-proxyClusterAppUser=proxyUser
+proxyMonitorUser=monitorUser
+proxyMonitorPass=28372362732
+proxyDebug=true
+proxyAdminUser=admin
+proxyAdminPass=232862637223
+
 
 [sqlServers]
 dev-sql1
 dev-sql2
 dev-sql3
+dev-sqlProxy1
+dev-sqlProxy2
+dev-sqlProxy3
+[sqlServers:vars]
+sqlBootstrapServer=dev-sql1
+proxyClusterUser=clusterUser
+proxyClusterPass=2362736276326237
+proxyClusterAppUser=proxyUser
+proxyClusterAppPass=2836273283285
 
 [sqlPerconaServers]
 dev-sql1
@@ -46,9 +60,6 @@ sqlDatabase=rickDB
 sqlRootPassword=82672627365232a
 sstUser=sstUser
 sstPassword=23287362583628
-proxyClusterUser=clusterUser
-proxyClusterPass=2362736276326237
-sqlBootstrapServer=dev-sql1
 sqlClusterName=myCluster1
 
 

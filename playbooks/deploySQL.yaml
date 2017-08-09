@@ -126,7 +126,7 @@
   tasks:
     - name: Creating Cluster App Production Database
       shell:
-        cmd: "mysql -e \"CREATE DATABASE {{sqlDatabase}}\""
+        cmd: "mysql -e \"CREATE DATABASE IF NOT EXISTS {{sqlDatabase}}\""
       delegate_to: "{{sqlBootstrapServer}}"
       ignore_errors: True
       run_once: True
@@ -147,6 +147,8 @@
     - name: Syncing Users to Proxy Servers
       shell:
         cmd: "proxysql-admin --config-file=/etc/proxysql-admin.cnf --syncusers"
+    - name: Pausing for proxy to sync
+      pause: seconds=10
     - name: Enabling Proxy Servers
       shell:
         cmd: "echo 'n' | proxysql-admin --config-file=/etc/proxysql-admin.cnf --enable"
