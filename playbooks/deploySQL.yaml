@@ -149,7 +149,10 @@
         cmd: "proxysql-admin --config-file=/etc/proxysql-admin.cnf --syncusers"
     - name: Pausing for proxy to sync
       pause: seconds=10
-    - name: Enabling Proxy Servers
+- hosts: sqlProxies
+  serial: 1
+  tasks:
+    - name: Enabling Proxy Servers In Serial
       shell:
         cmd: "echo 'n' | proxysql-admin --config-file=/etc/proxysql-admin.cnf --enable"
 - hosts: sqlPerconaServers
