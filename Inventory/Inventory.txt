@@ -14,13 +14,32 @@ dev-sql3 	ctid=1488102	ansible_ssh_host=10.114.88.52	onNode=newhampshire
 dev-sqlProxy1 	ctid=1488201	ansible_ssh_host=10.114.88.80	onNode=ogre
 dev-sqlProxy2 	ctid=1488202	ansible_ssh_host=10.114.88.81	onNode=impala
 dev-sqlProxy3 	ctid=1488203	ansible_ssh_host=10.114.88.82	onNode=newhampshire
+gitServer1 	ctid=1488300	ansible_ssh_host=10.114.88.90	onNode=ogre
+chatServer1 	ctid=1488400	ansible_ssh_host=10.114.88.110	onNode=ogre
+tor1	 	ctid=1488401	ansible_ssh_host=66.35.87.136	onNode=ogre
+rethinkdb1	ctid=1488501	ansible_ssh_host=10.114.88.165  onNode=ogre
 
+
+[chatServers]
+chatServer1
+
+[gitServers]
+gitServer1
+
+[gitServers:vars]
+GITLAB_ROOT_PASSWORD=2362323726372632
+GITLAB_ROOT_EMAIL=rapidvps@gmail.com
+ram=2G
+cpus=4
+cpus=4
+disk=20G
 
 [VMs:vars]
 ansible_ssh_user=root
 cpus=1
 ram=1G
 swap=1G
+disk=5G
 ostemplate=centos-7-x86_64
 
 [sqlProxies]
@@ -43,6 +62,10 @@ dev-sqlProxy1
 dev-sqlProxy2
 dev-sqlProxy3
 [sqlServers:vars]
+cpus=4
+disk=50G
+ram=4G
+swap=1G
 sqlBootstrapServer=dev-sql1
 proxyClusterUser=clusterUser
 proxyClusterPass=2362736276326237
@@ -53,10 +76,9 @@ proxyClusterAppPass=2836273283285
 dev-sql1
 dev-sql2
 dev-sql3
-[sqlPerconaServers:vars]
-sqlDatabase=rickDB
 
 [sqlPerconaServers:vars]
+sqlDatabase=rickDB
 sqlRootPassword=82672627365232a
 sstUser=sstUser
 sstPassword=23287362583628

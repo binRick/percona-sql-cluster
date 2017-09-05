@@ -30,6 +30,7 @@
     delegate_to: "{{hostvars[inventory_hostname].onNode}}"
     register: VMsChanged
     openvz:
+      onboot: yes
       state: started
       netfilter: full
       layout: simfs
@@ -38,6 +39,7 @@
       root: "/tank/{{hostvars[inventory_hostname].ctid}}/root"
       ostemplate: "{{hostvars[inventory_hostname].ostemplate}}"
       ram: "{{hostvars[inventory_hostname].ram}}"
+      diskspace: "{{hostvars[inventory_hostname].disk}}"
       swap: "{{hostvars[inventory_hostname].swap}}"
       hostname: "{{hostvars[inventory_hostname].inventory_hostname}}"
       ipaddr: "{{hostvars[inventory_hostname].ansible_ssh_host}}"
